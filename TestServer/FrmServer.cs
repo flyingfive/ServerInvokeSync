@@ -332,4 +332,22 @@ namespace TestServer
             }
         }
     }
+
+    public class JonSerailizater : SSock.IJsonSerialization
+    {
+        public object Deserialize(string json, Type dataType)
+        {
+            return JsonConvert.DeserializeObject(json, dataType);
+        }
+
+        public T Deserialize<T>(string json)
+        {
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+
+        public string Serialize(object obj)
+        {
+            return JsonConvert.SerializeObject(obj);
+        }
+    }
 }

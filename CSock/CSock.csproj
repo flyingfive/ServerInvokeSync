@@ -73,7 +73,6 @@
     <Compile Include="DynamicProxy\IProxyInvocationHandler.cs" />
     <Compile Include="DynamicProxy\MetaDataFactory.cs" />
     <Compile Include="DynamicProxy\ProxyObjectFactory.cs" />
-    <Compile Include="DynamicProxy\SecurityManager.cs" />
     <Compile Include="DynamicProxy\SocketInvocationHandler.cs" />
     <Compile Include="CSockChannel.cs" />
     <Compile Include="Dependency\SockServiceAttribute.cs" />
