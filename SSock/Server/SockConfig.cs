@@ -57,9 +57,14 @@ namespace SSock.Server
         public string AbandonDuplicateClient { get { return base["AbandonDuplicateClient"].ToString(); } set { base["AbandonDuplicateClient"] = value; } }
 
         /// <summary>
-        /// 远程调用超时时间（单位毫秒，默认15S）
+        /// 远程调用超时时间（单位毫秒，默认15）
         /// </summary>
         [ConfigurationProperty("RemoteInvokeTimeout", IsRequired = false, DefaultValue = 15000)]
         public int RemoteInvokeTimeout { get { return (int)base["RemoteInvokeTimeout"]; } set { base["RemoteInvokeTimeout"] = value; } }
+        /// <summary>
+        /// 网络连接正常情况下的keep alive数据的发送间隔（单位秒，默认60）
+        /// </summary>
+        [ConfigurationProperty("KeepAliveTime", IsRequired = false, DefaultValue = 60)]
+        public int KeepAliveTime { get { return (int)base["KeepAliveTime"]; } set { base["KeepAliveTime"] = value; } }
     }
 }

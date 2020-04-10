@@ -23,23 +23,19 @@ namespace WebUI.Controllers
 
         public JsonResult GetData()
         {
-            var total = 0;
-            lock (_syncObj)
-            {
-                total = App_Start.SocketHost.Instance.Server.OnlineClients.Count;
-            }
+            var total = App_Start.SocketHost.Instance.Server.SessionCount;
             if (total == 0) { return Json(new { result = "没有客户端连接" }, JsonRequestBehavior.AllowGet); }
             var index = new Random(1).Next(0, total);
-            var client = App_Start.SocketHost.Instance.Server.OnlineClients.Values.ToArray()[index];
+            var client = App_Start.SocketHost.Instance.Server.GetSessions((s) => { return s.ClientID == ""; }).FirstOrDefault();//.OnlineClients.Values.ToArray()[index];
             if (client == null) { return Json(new { total = 0 }, JsonRequestBehavior.AllowGet); }
-            var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientId);
+            var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientID);
             var name = Request.Params["name"];
             var idx = Convert.ToInt32(Request.Params["index"]);
             var amount = Convert.ToDecimal(Request.Params["amount"]);
             var cnt = Convert.ToInt32(Request.Params["count"]);
             var data = GetTestData(cnt);
             var list = service.GetItems(name, idx, amount, data);
-            return Json(new { client = client.ClientId, total = list.Count, rows = list }, JsonRequestBehavior.AllowGet);
+            return Json(new { client = client.ClientID, total = list.Count, rows = list }, JsonRequestBehavior.AllowGet);
         }
 
 

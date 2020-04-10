@@ -51,11 +51,6 @@ namespace SSock.Server
     public class SockServer : AppServer<SockSession, BinaryRequestInfo>
     {
         /// <summary>
-        /// 在线客户端
-        /// </summary>
-        public ConcurrentDictionary<string, ExternalIdentification> OnlineClients { get; private set; }
-
-        /// <summary>
         /// 一个完整的消息收到后触发
         /// </summary>
         public event EventHandler<MessageReceivedEventArgs> OnMessageReceived;
@@ -82,7 +77,6 @@ namespace SSock.Server
         internal SockServer() : base(new FixedHeadPacketReceiveFilterFactory())
         {
             _jsonHelper = JsonUtils.GetSerializer();
-            OnlineClients = new ConcurrentDictionary<string, ExternalIdentification>();
             this.NewRequestReceived += SockServer_NewRequestReceived;
         }
 
@@ -94,11 +88,24 @@ namespace SSock.Server
             var config = new ServerConfig()
             {
                 Port = sockConfig.Port,
+                //可允许连接的最大连接数;
                 MaxConnectionNumber = sockConfig.MaxConnectionNumber,
+                //最大允许的请求长度，默认值为1024;
                 MaxRequestLength = sockConfig.MaxRequestLength,
                 ReceiveBufferSize = sockConfig.BufferSize,
                 SendBufferSize = sockConfig.BufferSize,
-                Name = sockConfig.ServerName
+                Name = sockConfig.ServerName,
+                //文本的默认编码，默认值是 ASCII;
+                //TextEncoding = "UTF-8",
+                LogAllSocketException = true,
+                //网络连接正常情况下的keep alive数据的发送间隔, 默认值为 600, 单位为秒;
+                KeepAliveTime = sockConfig.KeepAliveTime,
+                //Keep alive失败之后, keep alive探测包的发送间隔，默认值为 60, 单位为秒;
+                KeepAliveInterval = 60,
+                // true 或 false, 是否定时清空空闲会话，默认值是 false;
+                ClearIdleSession = false,
+                //监听队列的大小;
+                ListenBacklog = 500,
             };
             base.Setup(config);
         }
@@ -133,13 +140,13 @@ namespace SSock.Server
                             .FirstOrDefault();
                         if (target != null && target.method != null)
                         {
-                            target.method.DynamicInvoke(new object[] { this, eventArgs });
+                            target.method.DynamicInvoke(new object[] { session, eventArgs });
                         }
                         else
                         {
                             //定向通知找不到订阅者的情况下广播发送此事件
                             //事件通知广播传递：这种简单方式的事件调用（所有有效的订阅者都会触发事件方法），在外部上一次的通讯信道还没有及时Dispose前，会产生冗余的事件触发
-                            this.OnClientReturned(this, eventArgs);
+                            this.OnClientReturned(session, eventArgs);
                         }
                     }
                     return;
@@ -150,7 +157,7 @@ namespace SSock.Server
                     var args = new InvokeMessageEventArgs(message);
                     if (OnClientInvoking != null)
                     {
-                        OnClientInvoking(this, args);
+                        OnClientInvoking(session, args);
                     }
                     else
                     {
@@ -159,7 +166,7 @@ namespace SSock.Server
                     var json = string.Empty;
                     if (args.ReturnData != null)
                     {
-                        json = _jsonHelper.Serialize(args.ReturnData);//JsonConvert.SerializeObject(args.ReturnData);
+                        json = _jsonHelper.Serialize(args.ReturnData);
                     }
                     var returnPacket = new MessageDataPacket() { ClientId = message.ClientId, MessageBody = json, MessageType = MessageType.Return, ReferId = message.Id };
                     session.Send(returnPacket);
@@ -170,7 +177,7 @@ namespace SSock.Server
                 var messageReceived = this.OnMessageReceived;
                 if (messageReceived != null)
                 {
-                    messageReceived(this, eventArgs);
+                    messageReceived(session, eventArgs);
                 }
             }
             //Array.Clear(bufferData, 0, bufferData.Length);
@@ -193,40 +200,38 @@ namespace SSock.Server
         /// <param name="message"></param>
         protected void UpdateIdentity(SockSession session, MessageDataPacket message)
         {
+            var clientId = message.ClientId;
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                session.Close(CloseReason.ServerClosing);
+                return;
+            }
+            var hostName = message.MessageBody;
+            var connectedSession = this.GetSessionByClientId(clientId);
             //同一个客户端第二次连接时踢除上一个会话
             if (string.Equals(_sockConfig.AbandonDuplicateClient, "Previous", StringComparison.CurrentCultureIgnoreCase))
             {
-                ExternalIdentification previousClient = null;
-                if (OnlineClients.TryGetValue(message.ClientId, out previousClient))
+                if (connectedSession != null)
                 {
                     //remark:同一业务标识已经有存在的一次连接
-                    var connectedSession = this.GetSessionByClientId(previousClient.ClientId);
-                    //这个判断一般不会成立
-                    if (connectedSession == null) { }
-                    connectedSession.Send(new MessageDataPacket() { ClientId = previousClient.ClientId, MessageType = MessageType.Notice, Action = FixedFlags.ABANDON_CONN });
+                    connectedSession.Send(new MessageDataPacket() { ClientId = clientId, MessageType = MessageType.Notice, Action = FixedFlags.ABANDON_CONN });
                 }
             }
-
             //同一个客户端第二次连接时保持上一个会话，踢除当前会话
-            if (OnlineClients.ContainsKey(message.ClientId))
+            if (string.Equals(_sockConfig.AbandonDuplicateClient, "Current", StringComparison.CurrentCultureIgnoreCase))
             {
-                if (string.Equals(_sockConfig.AbandonDuplicateClient, "Current", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    session.Send(new MessageDataPacket() { ClientId = message.ClientId, MessageType = MessageType.Notice, Action = FixedFlags.ABANDON_CONN });
-                }
+                session.Send(new MessageDataPacket() { ClientId = clientId, MessageType = MessageType.Notice, Action = FixedFlags.ABANDON_CONN });
+                return;
             }
-            else
-            {
-                var client = new ExternalIdentification(session.SessionID, message.ClientId, session.RemoteEndPoint.ToString()) { HostName = message.MessageBody };
-                var success = this.OnlineClients.TryAdd(message.ClientId, client);
-                if (this.OnClientIdentified != null && success)
-                {
-                    this.OnClientIdentified(this, new ExternalIdentifiedEventArgs(client));
-                }
-            }
+            session.ClientID = clientId;
+            session.HostName = hostName;
+            this.OnClientIdentified?.Invoke(session, new ClientSocketEventArgs(new SocketClientInfo() { ClientId = session.ClientID, SessionId = session.SessionID, LastActiveTime = session.LastActiveTime, StartTime = session.StartTime, RemoteAddress = session.RemoteEndPoint.ToString(), HostName = session.HostName }));
         }
 
-        public event EventHandler<ExternalIdentifiedEventArgs> OnClientIdentified;
+        /// <summary>
+        /// 识别到Socket会话客户端的业务标识后发生
+        /// </summary>
+        public event EventHandler<ClientSocketEventArgs> OnClientIdentified;
         public event EventHandler<ClientClosedEventArgs> OnClientClosed;
 
         protected override void OnNewSessionConnected(SockSession session)
@@ -237,19 +242,20 @@ namespace SSock.Server
 
         protected override void OnSessionClosed(SockSession session, CloseReason reason)
         {
-            var client = OnlineClients.Values.Where(s => string.Equals(s.SessionId, session.SessionID)).FirstOrDefault();
-            if (client != null)
+            if (reason == CloseReason.SocketError)
             {
-                var success = OnlineClients.TryRemove(client.ClientId, out client);
-                if (this.OnClientClosed != null && success)
-                {
-                    this.OnClientClosed(session, new ClientClosedEventArgs(client) { CloseReason = reason });
-                }
+                Logger.Error(string.Format("SocketError: sessionID:{0}, ClientID:{1}, RemoteAddress:{2}, LastActiveTime:{3}, StartTime:{4}, KeepAliveTime:{5}, TotalHandledRequests:{6}"
+                    , session.SessionID
+                    , session.ClientID
+                    , session.RemoteEndPoint.ToString()
+                    , session.LastActiveTime.ToString("yyyy-MM-dd HH:mm:ss")
+                    , session.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
+                    , this.Config.KeepAliveTime.ToString()
+                    , base.TotalHandledRequests.ToString()));
             }
-            else
+            if (!string.IsNullOrWhiteSpace(session.ClientID))
             {
-                //todo:这里应该要做记录
-                System.Diagnostics.Debug.WriteLine("CLOSE ERROR:" + session.SessionID);
+                this.OnClientClosed?.Invoke(session, new ClientClosedEventArgs(reason, new SocketClientInfo() { ClientId = session.ClientID, SessionId = session.SessionID, LastActiveTime = session.LastActiveTime, StartTime = session.StartTime, RemoteAddress = session.RemoteEndPoint.ToString(), HostName = session.HostName }));
             }
             base.OnSessionClosed(session, reason);
         }
@@ -261,31 +267,32 @@ namespace SSock.Server
         /// <returns></returns>
         public SockSession GetSessionByClientId(string clientId)
         {
-            ExternalIdentification client = null;
-            if (OnlineClients.TryGetValue(clientId, out client))
-            {
-                var session = this.GetSessionByID(client.SessionId);
-                return session;
-            }
-            return null;
+            var session = base.GetSessions((s) => { return string.Equals(s.ClientID, clientId); }).FirstOrDefault();
+            return session;
+        }
+
+        /// <summary>
+        /// 检查clientId标识的业务客户端是否在线。
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <returns></returns>
+        public bool CheckClientIsOnline(string clientId)
+        {
+            if (string.IsNullOrWhiteSpace(clientId)) { return false; }
+            var session = GetSessionByClientId(clientId);
+            return session != null && session.Connected;
         }
 
         protected override void OnStarted()
         {
             base.OnStarted();
-            if (Started != null)
-            {
-                Started(this, EventArgs.Empty);
-            }
+            Started?.Invoke(this, EventArgs.Empty);
         }
 
         protected override void OnStopped()
         {
             base.OnStopped();
-            if (Stopped != null)
-            {
-                Stopped(this, EventArgs.Empty);
-            }
+            Stopped?.Invoke(this, EventArgs.Empty);
         }
     }
 

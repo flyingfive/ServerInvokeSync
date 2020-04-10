@@ -59,18 +59,20 @@ namespace CSock
         /// <returns></returns>
         string Serialize(object obj);
         /// <summary>
-        /// Json序列化对象数组
-        /// </summary>
-        /// <param name="array"></param>
-        /// <returns></returns>
-        string Serialize(object[] array);
-        /// <summary>
         /// Json反序列化为对象
         /// </summary>
         /// <param name="json"></param>
         /// <param name="dataType"></param>
         /// <returns></returns>
         object Deserialize(string json, Type dataType);
+        /// <summary>
+        /// Json反序列化
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="json"></param>
+        /// <returns></returns>
+
+        T Deserialize<T>(string json);
 
     }
 }

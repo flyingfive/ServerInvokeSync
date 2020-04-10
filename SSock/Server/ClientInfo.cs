@@ -7,63 +7,53 @@ using SuperSocket.SocketBase;
 namespace SSock.Server
 {
     /// <summary>
-    /// 客户端外部业务标识[内部sessionId和外部clientId关联]
+    /// Socket客户端信息
     /// </summary>
-    public class ExternalIdentification
+    public class SocketClientInfo
     {
         /// <summary>
-        /// socket会话ID
+        /// 客户端身份ID
         /// </summary>
-        public string SessionId { get; private set; }
+        public string ClientId { get; set; }
         /// <summary>
-        /// 客户端业务标识ID
+        /// SuperSocket会话ID
         /// </summary>
-        public string ClientId { get; private set; }
+        public string SessionId { get; set; }
         /// <summary>
-        /// 客户端主机名称
+        /// 远程地址
+        /// </summary>
+        public string RemoteAddress { get; set; }
+        /// <summary>
+        /// 主机名
         /// </summary>
         public string HostName { get; set; }
         /// <summary>
-        /// 客户端远程地址
+        /// 最后活动时间
         /// </summary>
-        public string ClientAddress { get; private set; }
+        public DateTime LastActiveTime { get; set; }
+        /// <summary>
+        /// 连接创建时间
+        /// </summary>
+        public DateTime StartTime { get; set; }
+    }
 
-        public ExternalIdentification(string sessionId, string clientId,string clientAddress)
+    public class ClientSocketEventArgs : EventArgs
+    {
+        public SocketClientInfo Client { get; protected set; }
+
+        public ClientSocketEventArgs(SocketClientInfo clientInfo)
         {
-            if (string.IsNullOrWhiteSpace(sessionId)) { throw new ArgumentException("参数：sessionId错误"); }
-            if (string.IsNullOrWhiteSpace(clientId)) { throw new ArgumentException("参数：clientId错误"); }
-            if (string.IsNullOrWhiteSpace(clientAddress)) { throw new ArgumentException("参数：clientAddress错误"); }
-            this.SessionId = sessionId;
-            this.ClientId = clientId;
-            this.ClientAddress = clientAddress;
+            if (clientInfo == null) { throw new ArgumentNullException("参数clientInfo不能为null."); }
+            this.Client = clientInfo;
         }
     }
 
-    public class ExternalIdentifiedEventArgs : EventArgs
+    public class ClientClosedEventArgs : ClientSocketEventArgs
     {
-        /// <summary>
-        /// 含外部标只的客户端信息
-        /// </summary>
-        public ExternalIdentification Client { get; private set; }
-
-        public ExternalIdentifiedEventArgs(ExternalIdentification client)
+        public CloseReason CloseReason { get; private set; }
+        public ClientClosedEventArgs(CloseReason reason, SocketClientInfo clientInfo):base(clientInfo)
         {
-            if (client == null) { throw new ArgumentNullException("client不能为NULL"); }
-            this.Client = client;
-        }
-    }
-
-    public class ClientClosedEventArgs : EventArgs
-    {
-        /// <summary>
-        /// 含外部标只的客户端信息
-        /// </summary>
-        public ExternalIdentification Client { get; private set; }
-        public CloseReason CloseReason { get; set; }
-        public ClientClosedEventArgs(ExternalIdentification client)
-        {
-            if (client == null) { throw new ArgumentNullException("client不能为NULL"); }
-            this.Client = client;
+            this.CloseReason = reason;
         }
     }
 }

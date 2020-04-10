@@ -35,25 +35,24 @@ namespace TestServer
             _server.OnClientIdentified += _server_OnClientIdentified;
         }
 
-        private void _server_OnClientIdentified(object sender, ExternalIdentifiedEventArgs e)
+        private void _server_OnClientIdentified(object sender, ClientSocketEventArgs e)
         {
-            var client = e.Client;
-            UpdateClientInfoOnUI(client);
+            UpdateClientInfoOnUI(e.Client);
         }
 
-        private void UpdateClientInfoOnUI(ExternalIdentification client)
+        private void UpdateClientInfoOnUI(SocketClientInfo client)
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action<ExternalIdentification>(this.UpdateClientInfoOnUI), new object[] { client });
+                this.Invoke(new Action<SocketClientInfo>(this.UpdateClientInfoOnUI), new object[] { client });
             }
             else
             {
-                var idx = lbClients.FindString(string.Format("{0}|{1}", client.SessionId, client.ClientAddress));
+                var idx = lbClients.FindString(string.Format("{0}|{1}", client.SessionId, client.RemoteAddress));
                 if (idx != ListBox.NoMatches)
                 {
                     lbClients.Items.RemoveAt(idx);
-                    lbClients.Items.Insert(idx, string.Format("{0}|{1}|{2}", client.ClientId, client.SessionId, client.ClientAddress));
+                    lbClients.Items.Insert(idx, string.Format("{0}|{1}|{2}", client.ClientId, client.SessionId, client.RemoteAddress));
                 }
             }
         }
@@ -105,19 +104,19 @@ namespace TestServer
             RemoveClient(e.Client, e.CloseReason);
         }
 
-        private void RemoveClient(ExternalIdentification client, SuperSocket.SocketBase.CloseReason reason)
+        private void RemoveClient(SocketClientInfo client, SuperSocket.SocketBase.CloseReason reason)
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action<ExternalIdentification, SuperSocket.SocketBase.CloseReason>(this.RemoveClient), new object[] { client, reason });
+                this.Invoke(new Action<SocketClientInfo, SuperSocket.SocketBase.CloseReason>(this.RemoveClient), new object[] { client, reason });
             }
             else
             {
-                var key = string.Format("{0}|{1}", client.SessionId, client.ClientAddress);
+                var key = string.Format("{0}|{1}", client.SessionId, client.RemoteAddress);
                 var idx = lbClients.FindString(key);
                 if (idx == ListBox.NoMatches)
                 {
-                    key = string.Format("{0}|{1}|{2}", client.ClientId, client.SessionId, client.ClientAddress);
+                    key = string.Format("{0}|{1}|{2}", client.ClientId, client.SessionId, client.RemoteAddress);
                     idx = lbClients.FindString(key);
                 }
                 if (idx != ListBox.NoMatches)
@@ -223,9 +222,9 @@ namespace TestServer
             txtMsg.Clear();
             var cnt = Convert.ToInt32(numCount.Value);
             var sessionId = lbClients.SelectedItem.ToString().Split('|').Skip(1).First();
-            var client = _server.OnlineClients.Values.Where(s => string.Equals(s.SessionId, sessionId)).FirstOrDefault();
+            var client = _server.GetSessionByID(sessionId);//.OnlineClients.Values.Where(s => string.Equals(s.SessionId, sessionId)).FirstOrDefault();
             if (client == null) { return; }
-            var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientId);//ClientSockProxy.CreateProxy<IConsumeDataService>(client.ClientId);
+            var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientID);//ClientSockProxy.CreateProxy<IConsumeDataService>(client.ClientId);
             decimal? a = null;
             var ticks = Convert.ToInt32(numTicks.Value);
             var getCount = Convert.ToInt32(numGet.Value);
@@ -291,10 +290,10 @@ namespace TestServer
                 {
                     var sw = new Stopwatch();
                     var sessionId = item.ToString().Split('|').Skip(1).First();
-                    var client = _server.OnlineClients.Values.Where(s => string.Equals(s.SessionId, sessionId)).FirstOrDefault();
+                    var client = _server.GetSessionByID(sessionId);//.OnlineClients.Values.Where(s => string.Equals(s.SessionId, sessionId)).FirstOrDefault();
                     if (client != null)
                     {
-                        var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientId);//ClientSockProxy.CreateProxy<IConsumeDataService>(client.ClientId);
+                        var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientID);//ClientSockProxy.CreateProxy<IConsumeDataService>(client.ClientId);
                         var ticks = Convert.ToInt32(numTicks.Value);
                         var getCount = Convert.ToInt32(numGet.Value);
                         var list = GetTestData(cnt);
@@ -305,11 +304,11 @@ namespace TestServer
                             sw.Stop();
                             if (data != null)
                             {
-                                DisplayMsg(string.Format("Server第{0}次调用{2}，获取到：{1}条数据,耗时：{3}ms!", (i + 1).ToString(), data.Count, client.ClientId, sw.ElapsedMilliseconds));
+                                DisplayMsg(string.Format("Server第{0}次调用{2}，获取到：{1}条数据,耗时：{3}ms!", (i + 1).ToString(), data.Count, client.ClientID, sw.ElapsedMilliseconds));
                             }
                             else
                             {
-                                DisplayMsg(string.Format("ERROR:Server第{0}次调用{1}，获取失败,耗时：{2}ms!", (i + 1).ToString(), client.ClientId, sw.ElapsedMilliseconds));
+                                DisplayMsg(string.Format("ERROR:Server第{0}次调用{1}，获取失败,耗时：{2}ms!", (i + 1).ToString(), client.ClientID, sw.ElapsedMilliseconds));
                             }
                         }
                     }
@@ -323,13 +322,13 @@ namespace TestServer
             txtMsg.Clear();
             var cnt = Convert.ToInt32(numCount.Value);
             var sessionId = lbClients.SelectedItem.ToString().Split('|').Skip(1).First();
-            var client = _server.OnlineClients.Values.Where(s => string.Equals(s.SessionId, sessionId)).FirstOrDefault();
+            var client = _server.GetSessionByID(sessionId);//.OnlineClients.Values.Where(s => string.Equals(s.SessionId, sessionId)).FirstOrDefault();
             if (client == null) { return; }
-            var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientId);
+            var service = ProxyObjectFactory.GetInstance().CreateInterfaceProxyWithoutTarget<IConsumeDataService>(client.ClientID);
             var data = service.GetItems("aaa", 1, 2.5M, GetTestData(cnt));
             if (data != null)
             {
-                DisplayMsg(string.Format("Server第{0}次调用{2}，获取到：{1}条数据!", 1.ToString(), data.Count, client.ClientId));
+                DisplayMsg(string.Format("Server第{0}次调用{2}，获取到：{1}条数据!", 1.ToString(), data.Count, client.ClientID));
             }
         }
     }

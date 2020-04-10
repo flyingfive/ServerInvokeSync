@@ -23,8 +23,31 @@ namespace SSock.Server
         public bool IsClientInvoking { get { return Interlocked.Read(ref _remote_invoking_flag) > 0; } }
 
         private ISockChannel _currentChannel = null;
-
+        /// <summary>
+        /// 绑定到客户端上的Socket通讯信道
+        /// </summary>
         public ISockChannel CurrentChannel { get { return _currentChannel; } }
+        /// <summary>
+        /// 外部业务客户端ID
+        /// </summary>
+        public string ClientID { get; internal set; }
+        /// <summary>
+        /// 客户端主机名称
+        /// </summary>
+        public string HostName { get; internal set; }
+        protected override void HandleUnknownRequest(BinaryRequestInfo requestInfo)
+        {
+            this.Send("unknown message.");
+            Logger.Error(string.Format("sessionID:{0}接收到未知消息。KEY:{1}，ClientID:{2}, LastActiveTime:{3}, StartTime:{4}。"
+                , this.SessionID, requestInfo.Key, this.ClientID ?? ""
+                , this.LastActiveTime.ToString("yyyy-MM-dd HH:mm:ss")
+                , this.StartTime.ToString("yyyy-MM-dd HH:mm:ss")));
+        }
+        protected override void HandleException(Exception e)
+        {
+            Logger.Error("将关闭Socket连接，发生错误：", e);
+            this.Close(CloseReason.ApplicationError);
+        }
 
         /// <summary>
         /// 标识结束客户端远程调用

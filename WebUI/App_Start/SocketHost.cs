@@ -73,15 +73,27 @@ namespace WebUI.App_Start
             _server.OnClientInvoking += _server_OnRemoteInvoking;
             _server.NewSessionConnected += _server_NewSessionConnected;
             _server.OnMessageReceived += _server_OnMessageReceived;
+            //_server.OnClientClosed += _server_OnClientClosed;
             _server.OnClientClosed += _server_OnClientClosed;
             _server.OnClientIdentified += _server_OnClientIdentified;
+            //_server.OnClientIdentified += _server_OnClientIdentified;
         }
 
-        private void _server_OnClientIdentified(object sender, ExternalIdentifiedEventArgs e)
+        private void _server_OnClientClosed(object sender, ClientClosedEventArgs e)
         {
-            var client = e.Client;
-            System.Diagnostics.Debug.WriteLine(string.Format("{0}|{1}|{2}", client.ClientId, client.SessionId, client.ClientAddress));
+            //e.Client.StartTime
         }
+
+        private void _server_OnClientIdentified(object sender, ClientSocketEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        //private void _server_OnClientIdentified(object sender, ExternalIdentifiedEventArgs e)
+        //{
+        //    var client = e.Client;
+        //    System.Diagnostics.Debug.WriteLine(string.Format("{0}|{1}|{2}", client.ClientId, client.SessionId, client.ClientAddress));
+        //}
 
 
         private void _server_OnRemoteInvoking(object sender, InvokeMessageEventArgs e)
@@ -117,24 +129,24 @@ namespace WebUI.App_Start
 
         }
 
-        private void _server_SessionClosed(SockSession session, SuperSocket.SocketBase.CloseReason value)
-        {
-            //var item = lbClients.Items.OfType<string>().FirstOrDefault(x => x.StartsWith(session.SessionID));
-            //if (item != null)
-            //{
-            //    DisplayClients(item, false);
-            //}
-            var client = _server.OnlineClients.Values.Where(s => string.Equals(s.SessionId, session.SessionID)).FirstOrDefault();
-            if (client != null)
-            {
-                System.Diagnostics.Debug.WriteLine(string.Format("客户端：{0}断开连接，原因：{1}", client.ClientId, value.ToString()));
-            }
-        }
+        //private void _server_SessionClosed(SockSession session, SuperSocket.SocketBase.CloseReason value)
+        //{
+        //    //var item = lbClients.Items.OfType<string>().FirstOrDefault(x => x.StartsWith(session.SessionID));
+        //    //if (item != null)
+        //    //{
+        //    //    DisplayClients(item, false);
+        //    //}
+        //    var client = _server.OnlineClients.Values.Where(s => string.Equals(s.SessionId, session.SessionID)).FirstOrDefault();
+        //    if (client != null)
+        //    {
+        //        System.Diagnostics.Debug.WriteLine(string.Format("客户端：{0}断开连接，原因：{1}", client.ClientId, value.ToString()));
+        //    }
+        //}
 
-        private void _server_OnClientClosed(object sender, ClientClosedEventArgs e)
-        {
-            //RemoveClient(e.Client, e.CloseReason);
-        }
+        //private void _server_OnClientClosed(object sender, ClientClosedEventArgs e)
+        //{
+        //    //RemoveClient(e.Client, e.CloseReason);
+        //}
 
         private void _server_NewSessionConnected(SockSession session)
         {
