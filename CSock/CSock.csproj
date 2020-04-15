@@ -81,12 +81,13 @@
     <Compile Include="ISockChannel.cs" />
     <Compile Include="JsonUtils.cs" />
     <Compile Include="Message\MessageDataPacket.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SockClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -61,9 +61,6 @@
     <Reference Include="SuperSocket.Facility, Version=1.6.6.1, Culture=neutral, PublicKeyToken=6c80000676988ebb, processorArchitecture=MSIL">
       <HintPath>..\packages\SuperSocket.1.6.6.1\lib\net40\SuperSocket.Facility.dll</HintPath>
     </Reference>
-    <Reference Include="SuperSocket.ProtoBase, Version=1.7.0.17, Culture=neutral, PublicKeyToken=6c80000676988ebb, processorArchitecture=MSIL">
-      <HintPath>..\packages\SuperSocket.ProtoBase.1.7.0.17\lib\net40\SuperSocket.ProtoBase.dll</HintPath>
-    </Reference>
     <Reference Include="SuperSocket.SocketBase, Version=1.6.6.1, Culture=neutral, PublicKeyToken=6c80000676988ebb, processorArchitecture=MSIL">
       <HintPath>..\packages\SuperSocket.1.6.6.1\lib\net40\SuperSocket.SocketBase.dll</HintPath>
     </Reference>
@@ -87,7 +84,6 @@
     <Compile Include="ISockChannel.cs" />
     <Compile Include="JsonUtils.cs" />
     <Compile Include="Message\MessageDataPacket.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DynamicProxy\IProxyInvocationHandler.cs" />
     <Compile Include="Server\ClientInfo.cs" />
     <Compile Include="Server\DefaultSockServer.cs" />
@@ -104,6 +100,8 @@
     <None Include="supersocket.cmd" />
     <None Include="supersocket.sh" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

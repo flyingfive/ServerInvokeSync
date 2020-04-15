@@ -1,5 +1,4 @@
-﻿using SuperSocket.ProtoBase;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +8,7 @@ namespace SSock.Message
     /// <summary>
     /// socket消息数据包
     /// </summary>
-    public class MessageDataPacket : IPackageInfo
+    public class MessageDataPacket// : IPackageInfo
     {
         /// <summary>
         /// 消息ID
