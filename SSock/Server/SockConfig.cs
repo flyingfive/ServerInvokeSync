@@ -62,9 +62,9 @@ namespace SSock.Server
         [ConfigurationProperty("RemoteInvokeTimeout", IsRequired = false, DefaultValue = 15000)]
         public int RemoteInvokeTimeout { get { return (int)base["RemoteInvokeTimeout"]; } set { base["RemoteInvokeTimeout"] = value; } }
         /// <summary>
-        /// 网络连接正常情况下的keep alive数据的发送间隔（单位秒，默认60）
+        /// 网络连接正常情况下的keep alive数据的发送间隔（单位秒，默认10分钟）
         /// </summary>
-        [ConfigurationProperty("KeepAliveTime", IsRequired = false, DefaultValue = 60)]
+        [ConfigurationProperty("KeepAliveTime", IsRequired = false, DefaultValue = 60 * 10)]
         public int KeepAliveTime { get { return (int)base["KeepAliveTime"]; } set { base["KeepAliveTime"] = value; } }
     }
 }

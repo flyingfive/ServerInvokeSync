@@ -9,6 +9,7 @@ namespace FlyingSocket.DynamicProxy
     /// <summary>
     /// 表示代理调用实现的处理点
     /// </summary>
+    [Obsolete("Utilities.FlyingFive中已实现", true)]
     public interface IProxyInvocationHandler
     {
         /// <summary>
