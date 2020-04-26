@@ -6,6 +6,7 @@ namespace SSock.Dependency
     /// 标识此类是一个socket服务的本地实现
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [Obsolete("使用接口替代")]
     public class SockServiceAttribute : System.Attribute
     {
 

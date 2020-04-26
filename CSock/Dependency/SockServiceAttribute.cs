@@ -7,6 +7,7 @@ namespace CSock.Dependency
     /// 标识此类是一个socket服务的本地实现（IOC约定：必需要有一个接口，且接口名称格式为：I{className}
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [Obsolete("使用接口替代")]
     public class SockServiceAttribute : System.Attribute
     {
         public SockServiceAttribute()
