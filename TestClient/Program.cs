@@ -22,6 +22,8 @@ namespace TestClient
         [STAThread]
         static void Main()
         {
+            var connections = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
+            
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             _container = new Castle.Windsor.WindsorContainer();
